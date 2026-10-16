@@ -46,3 +46,25 @@ const gameInfo = require('./src/config/game-info');
 app.get('/api/v1/game-info', (req, res) => {
   res.json(gameInfo);
 });
+
+const resultsRepository = require('./src/repositories/results.repository');
+
+app.get('/api/v1/results', async (req, res) => {
+  try {
+    const hubKey = req.headers['x-hub-key'];
+    if (!hubKey || hubKey !== process.env.HUB_KEY && hubKey !== 'dev-hub-key') {
+      return res.status(401).json({ error: 'HUB_KEY_REQUIRED' });
+    }
+    
+    const sinceParam = req.query.since ? new Date(req.query.since) : null;
+    if (req.query.since && isNaN(sinceParam.getTime())) {
+      return res.status(400).json({ error: 'INVALID_SINCE' });
+    }
+
+    const results = await resultsRepository.findFinishedGamePlayers(sinceParam);
+    return res.status(200).json(results);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
+  }
+});
