@@ -38,6 +38,9 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 3001;
 
 // Start server without crashing if DB is missing initially
+app.use('/api/v1', require('./src/routes'));
+app.use(require('./src/middlewares/error-handler'));
+
 app.listen(PORT, () => {
   console.log(`API listening on http://localhost:${PORT}/api/v1`);
 });
