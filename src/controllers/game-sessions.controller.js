@@ -1,11 +1,25 @@
 'use strict';
 
+const { matchedData } = require('express-validator');
 const gameSessionsService = require('../services/game-sessions.service');
+
+function toJson(session) {
+  const raw = session && session.toJSON ? session.toJSON() : session;
+  return {
+    id: raw.id,
+    session_code: raw.session_code,
+    status: raw.status,
+    question_set_id: raw.question_set_id,
+    user_id: raw.user_id,
+    created_at: raw.created_at,
+    updated_at: raw.updated_at
+  };
+}
 
 async function index(req, res, next) {
   try {
-    const sessions = await gameSessionsService.getAllSessions();
-    return res.status(200).json(sessions);
+    const items = await gameSessionsService.getAllSessions();
+    return res.status(200).json({ data: items.map(toJson) });
   } catch (err) {
     return next(err);
   }
@@ -13,8 +27,9 @@ async function index(req, res, next) {
 
 async function show(req, res, next) {
   try {
-    const session = await gameSessionsService.getSessionById(req.params.id);
-    return res.status(200).json(session);
+    const { code } = matchedData(req, { locations: ['params'] });
+    const session = await gameSessionsService.getSessionByCode(code);
+    return res.status(200).json({ data: toJson(session) });
   } catch (err) {
     return next(err);
   }
@@ -22,26 +37,20 @@ async function show(req, res, next) {
 
 async function store(req, res, next) {
   try {
-    const session = await gameSessionsService.createSession(req.body);
-    return res.status(201).json(session);
+    const data = matchedData(req, { locations: ['body'] });
+    const created = await gameSessionsService.createSession(data, req.user);
+    return res.status(201).json({ data: toJson(created) });
   } catch (err) {
     return next(err);
   }
 }
 
-async function update(req, res, next) {
+async function updateStatus(req, res, next) {
   try {
-    const session = await gameSessionsService.updateSessionById(req.params.id, req.body);
-    return res.status(200).json(session);
-  } catch (err) {
-    return next(err);
-  }
-}
-
-async function destroy(req, res, next) {
-  try {
-    const result = await gameSessionsService.deleteSessionById(req.params.id);
-    return res.status(200).json(result);
+    const { code } = matchedData(req, { locations: ['params'] });
+    const data = matchedData(req, { locations: ['body'] });
+    const updated = await gameSessionsService.updateSessionByCode(code, data, req.user);
+    return res.status(200).json({ data: toJson(updated) });
   } catch (err) {
     return next(err);
   }
@@ -51,6 +60,5 @@ module.exports = {
   index,
   show,
   store,
-  update,
-  destroy,
+  updateStatus
 };
