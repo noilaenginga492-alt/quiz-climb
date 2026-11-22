@@ -1,0 +1,114 @@
+{
+  "info": {
+    "name": "QuizClimb Week 11 CRUD & Validation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "hostUser", "value": "1" },
+    { "key": "playerUser", "value": "2" },
+    { "key": "sessionCode", "value": "123456" },
+    { "key": "questionSetId", "value": "1" },
+    { "key": "hubKey", "value": "dev-hub-key" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/health"
+      }
+    },
+    {
+      "name": "Game Info",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/game-info"
+      }
+    },
+    {
+      "name": "List Question Sets",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/question-sets"
+      }
+    },
+    {
+      "name": "Create Question Set (Host)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Demo-User", "value": "{{hostUser}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Week 11 Quiz Set\",\n  \"description\": \"Sample question set\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/question-sets"
+      }
+    },
+    {
+      "name": "Create Session (6-digit code)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Demo-User", "value": "{{hostUser}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question_set_id\": {{questionSetId}},\n  \"user_id\": {{hostUser}}\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/sessions"
+      }
+    },
+    {
+      "name": "Join Session by Code",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Demo-User", "value": "{{playerUser}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": {{playerUser}}\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/sessions/{{sessionCode}}/players"
+      }
+    },
+    {
+      "name": "List Session Players",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/sessions/{{sessionCode}}/players"
+      }
+    },
+    {
+      "name": "Close Session",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Demo-User", "value": "{{hostUser}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"closed\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/sessions/{{sessionCode}}"
+      }
+    },
+    {
+      "name": "Results (Hub Key)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "X-Hub-Key", "value": "{{hubKey}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/results"
+      }
+    }
+  ]
+}

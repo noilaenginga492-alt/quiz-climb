@@ -1,33 +1,32 @@
+'use strict';
+
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { Sequelize } = require('sequelize');
-require('dotenv').config();
+const { sequelize } = require('./src/models');
+const gameInfo = require('./src/config/game-info');
+const resultsRepository = require('./src/repositories/results.repository');
+const { AppError } = require('./src/errors/app-error');
+const errorHandler = require('./src/middlewares/error-handler');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Database connection setup
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT || 5432,
-    dialect: process.env.DB_DIALECT || 'postgres',
-    logging: false,
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`${req.method} ${req.originalUrl}`);
   }
-);
+  next();
+});
 
-// Health Check Endpoint (Required by Lab Manual Step 4.2)
-app.get('/api/v1/health', async (req, res) => {
+app.get('/api/v1/health', async (req, res, next) => {
   try {
     await sequelize.authenticate();
-    res.status(200).json({ database: "up" });
+    return res.status(200).json({ database: 'up' });
   } catch (err) {
-    res.status(503).json({ database: "down" });
+    return next(new AppError('Database connection failed', 503, null, 'DB_UNAVAILABLE'));
   }
 });
 
@@ -35,39 +34,43 @@ app.get('/', (req, res) => {
   res.send('QuizClimb Backend API is running!');
 });
 
-const PORT = process.env.PORT || 3001;
-
-// Start server without crashing if DB is missing initially
-app.use('/api/v1', require('./src/routes'));
-app.use(require('./src/middlewares/error-handler'));
-
-app.listen(PORT, () => {
-  console.log(`API listening on http://localhost:${PORT}/api/v1`);
-});
-
-const gameInfo = require('./src/config/game-info');
 app.get('/api/v1/game-info', (req, res) => {
   res.json(gameInfo);
 });
 
-const resultsRepository = require('./src/repositories/results.repository');
-
-app.get('/api/v1/results', async (req, res) => {
+app.get('/api/v1/results', async (req, res, next) => {
   try {
     const hubKey = req.headers['x-hub-key'];
-    if (!hubKey || hubKey !== process.env.HUB_KEY && hubKey !== 'dev-hub-key') {
-      return res.status(401).json({ error: 'HUB_KEY_REQUIRED' });
+    if (!hubKey || (hubKey !== process.env.HUB_KEY && hubKey !== 'dev-hub-key')) {
+      return next(new AppError('Missing or invalid Hub key.', 401, null, 'HUB_KEY_REQUIRED'));
     }
-    
-    const sinceParam = req.query.since ? new Date(req.query.since) : null;
-    if (req.query.since && isNaN(sinceParam.getTime())) {
-      return res.status(400).json({ error: 'INVALID_SINCE' });
+
+    let sinceParam = null;
+    if (req.query.since !== undefined) {
+      const parsed = new Date(req.query.since);
+      if (isNaN(parsed.getTime())) {
+        return next(new AppError('Invalid since date.', 400, null, 'INVALID_SINCE'));
+      }
+      sinceParam = parsed;
     }
 
     const results = await resultsRepository.findFinishedGamePlayers(sinceParam);
-    return res.status(200).json(results);
+    return res.status(200).json({ data: results });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
+    return next(err);
   }
+});
+
+app.use('/api/v1', require('./src/routes'));
+
+app.use((req, res, next) => {
+  next(new AppError(`Route not found: ${req.method} ${req.originalUrl}`, 404, null, 'NOT_FOUND'));
+});
+
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 3001;
+
+app.listen(PORT, () => {
+  console.log(`API listening on http://localhost:${PORT}/api/v1`);
 });

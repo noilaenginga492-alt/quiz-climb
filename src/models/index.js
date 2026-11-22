@@ -17,8 +17,8 @@ const Choice = require('./choice.model')(sequelize);
 const GameSession = require('./game-session.model')(sequelize);
 const Player = require('./player.model')(sequelize);
 
-User.hasMany(GameSession, { foreignKey: 'host_user_id', as: 'hostedSessions' });
-GameSession.belongsTo(User, { foreignKey: 'host_user_id', as: 'host' });
+User.hasMany(GameSession, { foreignKey: 'user_id', as: 'hostedSessions' });
+GameSession.belongsTo(User, { foreignKey: 'user_id', as: 'host' });
 
 User.hasMany(Player, { foreignKey: 'user_id', as: 'players' });
 Player.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
