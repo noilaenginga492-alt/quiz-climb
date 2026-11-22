@@ -23,3 +23,8 @@
 ## When Is a Game Considered "Completed"?
 
 A game session is treated as **completed** once its `status` is set to `'closed'` (for example via `PATCH /api/v1/sessions/:code` with `{ "status": "closed" }`). Once `'closed'`, the player no longer blocks joining a new session under the one-game-at-a-time rule, and finished game player results can be queried via `GET /api/v1/results`.
+
+## Week 11 Verification Notes
+- Verified layered structure (`routes`, `validators`, `controllers`, `services`, `repositories`, `models`) and centralized error handling (`AppError`, `constraint-map.js`, `error-handler.js`).
+- Verified role guards (`X-Demo-User`, `X-Hub-Key`), `403` ownership/role checks, `409` conflict handling (`ALREADY_IN_GAME` and constraints), and `closed` session completion behavior.
+- Tested endpoints using `postman/quiz-climb-week11.postman_collection.json`.
