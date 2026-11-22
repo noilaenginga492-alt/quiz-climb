@@ -11,8 +11,15 @@ const sequelize = new Sequelize(config.database, config.username, config.passwor
 });
 
 const QuestionSet = require('./question-set.model')(sequelize);
+const GameSession = require('./game-session.model')(sequelize);
+const Player = require('./player.model')(sequelize);
+
+GameSession.hasMany(Player, { foreignKey: 'game_session_id', as: 'players' });
+Player.belongsTo(GameSession, { foreignKey: 'game_session_id', as: 'session' });
 
 module.exports = {
   sequelize,
   QuestionSet,
+  GameSession,
+  Player,
 };
